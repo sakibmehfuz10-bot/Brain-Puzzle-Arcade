@@ -1,0 +1,6 @@
+{
+  "name": "AI Quiz",
+  "description": "Interactive AI-powered quiz application with timers, animations, score tracking, and dark mode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
