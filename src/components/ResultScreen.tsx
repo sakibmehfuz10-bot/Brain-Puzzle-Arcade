@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Trophy, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playWinSound } from '../lib/sound';
 
 interface ResultScreenProps {
   key?: any;
@@ -12,9 +13,32 @@ interface ResultScreenProps {
 }
 
 export function ResultScreen({ score, totalQuestions, topic, onRestart }: ResultScreenProps) {
+  const [isLoading, setIsLoading] = useState(true);
   const percentage = Math.round((score / totalQuestions) * 100);
   
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Play completion sound on result screen mount
+    playWinSound();
+
+    // Dispatch achievements dynamically
+    window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'trivia_pioneer' } }));
+    if (score === totalQuestions && totalQuestions > 0) {
+      window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'quiz_master' } }));
+    }
+  }, [isLoading, score, totalQuestions]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
     if (percentage >= 80) {
       const duration = 3 * 1000;
       const animationEnd = Date.now() + duration;
@@ -36,13 +60,44 @@ export function ResultScreen({ score, totalQuestions, topic, onRestart }: Result
 
       return () => clearInterval(interval);
     }
-  }, [percentage]);
+  }, [isLoading, percentage]);
 
   let message = "";
   if (percentage === 100) message = "Flawless Victory!";
   else if (percentage >= 80) message = "A True Expert!";
   else if (percentage >= 60) message = "Solid Effort!";
   else message = "Keep Learning!";
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden text-center animate-pulse">
+        {/* Skeleton Header */}
+        <div className="pt-12 pb-10 px-8 bg-gray-900 dark:bg-slate-900 text-white relative">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-400 via-transparent to-transparent" />
+          <div className="w-24 h-24 mx-auto bg-slate-700 dark:bg-slate-700 rounded-[2rem] mb-6" />
+          <div className="h-8 bg-slate-700 dark:bg-slate-700 rounded-full w-48 mx-auto mb-3" />
+          <div className="h-4 bg-slate-700 dark:bg-slate-700 rounded-full w-32 mx-auto" />
+        </div>
+
+        {/* Skeleton Body */}
+        <div className="p-8">
+          <div className="flex justify-center items-center space-x-12 mb-10">
+            <div className="flex flex-col items-center flex-1">
+              <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-full w-12 mb-3" />
+              <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded-xl w-16 animate-pulse" />
+            </div>
+            <div className="w-px h-16 bg-gray-200 dark:bg-slate-700" />
+            <div className="flex flex-col items-center flex-1">
+              <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-full w-16 mb-3" />
+              <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded-xl w-16 animate-pulse" />
+            </div>
+          </div>
+          {/* Skeleton Button */}
+          <div className="w-full h-14 bg-gray-200 dark:bg-slate-700 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -82,7 +137,10 @@ export function ResultScreen({ score, totalQuestions, topic, onRestart }: Result
         </div>
 
         <button
-          onClick={onRestart}
+          onClick={() => {
+            playClickSound();
+            onRestart();
+          }}
           className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold rounded-2xl transition-colors flex items-center justify-center active:scale-[0.98]"
         >
           <RotateCcw className="w-5 h-5 mr-3" />

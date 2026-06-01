@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, RotateCcw, Zap, Timer, CheckCircle, XCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound, playWinSound } from '../../lib/sound';
 
 interface Question {
   num1: number;
@@ -69,6 +70,7 @@ export function MathSpeedRun() {
   };
 
   const startGame = () => {
+    playClickSound();
     setIsPlaying(true);
     setTimeLeft(45);
     setScore(0);
@@ -87,6 +89,7 @@ export function MathSpeedRun() {
     setIsAnswerCorrect(correct);
 
     if (correct) {
+      playCorrectSound();
       setScore(prev => prev + 10 + Math.floor(streak / 3) * 2);
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -94,6 +97,7 @@ export function MathSpeedRun() {
         setBestStreak(newStreak);
       }
     } else {
+      playIncorrectSound();
       setStreak(0);
     }
 
@@ -111,7 +115,9 @@ export function MathSpeedRun() {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
             setIsPlaying(false);
-            if (score > 100) {
+            playWinSound();
+            if (score >= 100) {
+              window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'math_overlord' } }));
               confetti({
                 particleCount: 150,
                 spread: 80,

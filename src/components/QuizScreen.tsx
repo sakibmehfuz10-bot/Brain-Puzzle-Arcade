@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Timer, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { Question } from '../types';
+import { playClickSound, playCorrectSound, playIncorrectSound } from '../lib/sound';
 
 interface QuizScreenProps {
   key?: any;
@@ -44,6 +45,7 @@ export function QuizScreen({ question, questionNumber, totalQuestions, onAnswer,
 
   const handleTimeUp = () => {
     setIsAnswered(true);
+    playIncorrectSound();
     onAnswer('', false); // Empty answer means timeout
   };
 
@@ -52,6 +54,18 @@ export function QuizScreen({ question, questionNumber, totalQuestions, onAnswer,
     setSelectedAnswer(option);
     setIsAnswered(true);
     const isCorrect = option.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+    
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playIncorrectSound();
+    }
+
+    // Fast Thinker trigger: correct answer with at least 26 seconds remaining (took < 4 seconds)
+    if (isCorrect && timeLeft >= 26) {
+      window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'fast_thinker' } }));
+    }
+
     onAnswer(option, isCorrect);
   };
 
@@ -196,7 +210,10 @@ export function QuizScreen({ question, questionNumber, totalQuestions, onAnswer,
           className="flex justify-end mb-10"
         >
           <button
-            onClick={onNext}
+            onClick={() => {
+              playClickSound();
+              onNext();
+            }}
             className="flex items-center px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold rounded-2xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-[0.98] shadow-lg shadow-gray-900/20 dark:shadow-none"
           >
             {questionNumber === totalQuestions ? 'See Final Results' : 'Next Question'}

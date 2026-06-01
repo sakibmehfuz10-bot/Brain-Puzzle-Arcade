@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Play, Flame, RefreshCw as Recycle, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound, playWinSound } from '../../lib/sound';
 
 interface GridCell {
   id: number;
@@ -43,6 +44,7 @@ export function SumGrid() {
   };
 
   const startSumGridGame = () => {
+    playClickSound();
     const raw = generateNewGrid();
     setGrid(raw);
     const targetObj = getValidSumObjective(raw);
@@ -56,6 +58,9 @@ export function SumGrid() {
   const handleCellClick = (index: number) => {
     if (!isPlaying) return;
 
+    // Play tile click feedback
+    playClickSound();
+
     const updated = [...grid];
     updated[index].selected = !updated[index].selected;
     setGrid(updated);
@@ -66,6 +71,7 @@ export function SumGrid() {
 
     if (currentSum === targetSum) {
       // SUCCESS: Clear cells & add score points!
+      playCorrectSound();
       setScore(prev => prev + currentSum + streak * 5);
       setStreak(prev => prev + 1);
       
@@ -95,6 +101,7 @@ export function SumGrid() {
       setTargetSum(getValidSumObjective(regenerated));
     } else if (currentSum > targetSum) {
       // EXCEEDED: Clear choice after subtle timeout
+      playIncorrectSound();
       setTimeout(() => {
         const cleared = updated.map(c => ({ ...c, selected: false }));
         setGrid(cleared);
@@ -104,6 +111,7 @@ export function SumGrid() {
   };
 
   const recycleGrid = () => {
+    playClickSound();
     const raw = generateNewGrid();
     setGrid(raw);
     setTargetSum(getValidSumObjective(raw));
@@ -118,6 +126,7 @@ export function SumGrid() {
           if (prev <= 1) {
             clearInterval(interval!);
             setIsPlaying(false);
+            playWinSound();
             return 0;
           }
           return prev - 1;

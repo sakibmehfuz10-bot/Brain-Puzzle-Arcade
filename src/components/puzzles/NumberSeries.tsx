@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HelpCircle, RefreshCw, AlertTriangle, ArrowRight, BookOpen, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound } from '../../lib/sound';
 
 interface SeriesPuzzle {
   sequenceDisplay: string;
@@ -101,16 +102,20 @@ export function NumberSeries() {
     setIsCorrect(correct);
 
     if (correct) {
+      playCorrectSound();
       setScore(prev => prev + 25);
       confetti({
         particleCount: 50,
         spread: 40,
         origin: { y: 0.8 }
       });
+    } else {
+      playIncorrectSound();
     }
   };
 
   const advanceLevel = () => {
+    playClickSound();
     const nextIdx = level + 1;
     setLevel(nextIdx);
     initLevel(nextIdx);
@@ -183,7 +188,10 @@ export function NumberSeries() {
 
       <div className="flex space-x-3 mb-4">
         <button
-          onClick={() => setShowHint(!showHint)}
+          onClick={() => {
+            playClickSound();
+            setShowHint(!showHint);
+          }}
           className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all text-xs"
         >
           {showHint ? 'Hide Hint Log' : 'Examine Pattern Hint'}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Award, Play } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound, playWinSound } from '../../lib/sound';
 
 interface Card {
   id: number;
@@ -24,8 +25,8 @@ export function MemoryCards() {
     const pairList = [...EMOJIS, ...EMOJIS];
     // Shuffle
     for (let i = pairList.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pairList[i], pairList[j]] = [pairList[j], pairList[i]];
+       const j = Math.floor(Math.random() * (i + 1));
+       [pairList[i], pairList[j]] = [pairList[j], pairList[i]];
     }
 
     const initialCards: Card[] = pairList.map((emoji, index) => ({
@@ -44,6 +45,9 @@ export function MemoryCards() {
 
   const handleCardClick = (index: number) => {
     if (!isPlaying || selected.length >= 2 || cards[index].isFlipped || cards[index].isMatched) return;
+
+    // Play card flipping click sound
+    playClickSound();
 
     const newCards = [...cards];
     newCards[index].isFlipped = true;
@@ -70,15 +74,21 @@ export function MemoryCards() {
           if (won) {
             setHasWon(true);
             setIsPlaying(false);
+            playWinSound();
+            window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'memory_monarch' } }));
             confetti({
               particleCount: 100,
               spread: 70,
               origin: { y: 0.6 }
             });
+          } else {
+            // Regular match chime
+            playCorrectSound();
           }
         }, 500);
       } else {
-        // Mis-match, flip back
+        // Mis-match, play buzz after a tiny delay and flip back
+        playIncorrectSound();
         setTimeout(() => {
           const flippedBack = [...cards];
           flippedBack[firstIdx].isFlipped = false;

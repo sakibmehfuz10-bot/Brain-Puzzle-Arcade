@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound } from '../../lib/sound';
 
 const WORD_POOL = [
   { word: 'GALAXY', hint: 'A system of millions or billions of stars, together with gas and dust.' },
@@ -46,6 +47,8 @@ export function WordScramble() {
     if (cleanInput === currentWordObj.word) {
       setIsCorrect(true);
       setScore(prev => prev + 10);
+      playCorrectSound();
+      window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'scramble_solver' } }));
       confetti({
         particleCount: 50,
         spread: 40,
@@ -54,6 +57,7 @@ export function WordScramble() {
     } else {
       setIsCorrect(false);
       setAttempts(prev => prev + 1);
+      playIncorrectSound();
     }
   };
 
@@ -101,7 +105,10 @@ export function WordScramble() {
         <div className="flex space-x-3">
           <button
             type="button"
-            onClick={() => setShowHint(!showHint)}
+            onClick={() => {
+              playClickSound();
+              setShowHint(!showHint);
+            }}
             className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all flex items-center justify-center text-sm"
           >
             <HelpCircle className="w-4 h-4 mr-2" />
@@ -142,7 +149,10 @@ export function WordScramble() {
               <CheckCircle2 className="w-5 h-5 mr-2" /> Amazing! That's correct!
             </span>
             <button
-              onClick={selectNewWord}
+              onClick={() => {
+                playClickSound();
+                selectNewWord();
+              }}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition-colors"
             >
               Next Word

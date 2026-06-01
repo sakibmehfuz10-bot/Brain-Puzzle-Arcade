@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HelpCircle, RefreshCw, Check, AlertTriangle, Play, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playCorrectSound, playIncorrectSound } from '../../lib/sound';
 
 interface OperatorQuestion {
   num1: number;
@@ -85,6 +86,7 @@ export function MissingOperator() {
   };
 
   const startLevel = (lvl: number) => {
+    playClickSound();
     setLevel(lvl);
     setCurrentQuestion(generateLevelsOfMath(lvl));
     setSelectedOp1(null);
@@ -94,6 +96,7 @@ export function MissingOperator() {
 
   const selectOperator = (op: string) => {
     if (hasWonLevel === true) return;
+    playClickSound();
 
     if (!selectedOp1) {
       setSelectedOp1(op);
@@ -103,6 +106,7 @@ export function MissingOperator() {
   };
 
   const clearSelection = () => {
+    playClickSound();
     setSelectedOp1(null);
     setSelectedOp2(null);
     setHasWonLevel(null);
@@ -126,6 +130,7 @@ export function MissingOperator() {
     }
 
     if (correct) {
+      playCorrectSound();
       setHasWonLevel(true);
       setScore(prev => prev + lvlBonus());
       confetti({
@@ -134,6 +139,7 @@ export function MissingOperator() {
         origin: { y: 0.8 }
       });
     } else {
+      playIncorrectSound();
       setHasWonLevel(false);
     }
   };

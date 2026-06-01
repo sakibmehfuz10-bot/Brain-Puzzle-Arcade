@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Question, QuizState, QuizDifficulty } from './types';
 import { ThemeToggle } from './components/ThemeToggle';
+import { SoundToggle } from './components/SoundToggle';
+import { playClickSound } from './lib/sound';
 import { StartScreen } from './components/StartScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { ResultScreen } from './components/ResultScreen';
@@ -13,9 +15,11 @@ import { MathSpeedRun } from './components/puzzles/MathSpeedRun';
 import { MissingOperator } from './components/puzzles/MissingOperator';
 import { SumGrid } from './components/puzzles/SumGrid';
 import { NumberSeries } from './components/puzzles/NumberSeries';
-import { BrainCircuit, Grid, Type, LayoutGrid, Zap, HelpCircle, Flame, BookOpen } from 'lucide-react';
+import { BrainCircuit, Grid, Type, LayoutGrid, Zap, HelpCircle, Flame, BookOpen, Trophy } from 'lucide-react';
+import { useAchievements } from './context/AchievementsContext';
 
 export default function App() {
+  const { unlockedList, setTrophyModalOpen } = useAchievements();
   const [activeTab, setActiveTab] = useState<'quiz' | 'sliding' | 'scramble' | 'sudoku' | 'memory' | 'speedrun' | 'operator' | 'sumgrid' | 'pattern'>('quiz');
   const [gameCategoryFilter, setGameCategoryFilter] = useState<'all' | 'classic' | 'math'>('all');
   const [state, setState] = useState<QuizState>('start');
@@ -26,6 +30,16 @@ export default function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  const selectTab = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    playClickSound();
+  };
+
+  const selectFilter = (filter: typeof gameCategoryFilter) => {
+    setGameCategoryFilter(filter);
+    playClickSound();
+  };
 
   const startQuiz = async (selectedTopic: string, selectedCategory: string, selectedDifficulty: QuizDifficulty) => {
     setIsLoading(true);
@@ -84,7 +98,25 @@ export default function App() {
 
   return (
     <div className="min-h-screen py-12 px-4 selection:bg-blue-200 dark:selection:bg-blue-900 flex flex-col font-sans">
-      <div className="fixed top-6 right-6 z-50 flex items-center space-x-3">
+      <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-3">
+        <button
+          onClick={() => {
+            playClickSound();
+            setTrophyModalOpen(true);
+          }}
+          className="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-slate-800 transition-all shadow-sm bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 relative flex items-center justify-center text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 cursor-pointer"
+          aria-label="View Achievements Trophy Room"
+          title="Achievements Trophy Room"
+          id="achievements-trophy-button"
+        >
+          <Trophy className="w-5 h-5" />
+          {unlockedList.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white font-extrabold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-white dark:border-slate-900 shadow-xs animate-pulse">
+              {unlockedList.length}
+            </span>
+          )}
+        </button>
+        <SoundToggle />
         <ThemeToggle />
       </div>
 
@@ -97,7 +129,7 @@ export default function App() {
             {/* Category Select Filter */}
             <div className="flex bg-gray-100 dark:bg-slate-900/60 p-1 rounded-xl text-xs font-bold">
               <button
-                onClick={() => setGameCategoryFilter('all')}
+                onClick={() => selectFilter('all')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
                   gameCategoryFilter === 'all'
                     ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs'
@@ -107,7 +139,7 @@ export default function App() {
                 All
               </button>
               <button
-                onClick={() => setGameCategoryFilter('classic')}
+                onClick={() => selectFilter('classic')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
                   gameCategoryFilter === 'classic'
                     ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs'
@@ -117,7 +149,7 @@ export default function App() {
                 Classic
               </button>
               <button
-                onClick={() => setGameCategoryFilter('math')}
+                onClick={() => selectFilter('math')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
                   gameCategoryFilter === 'math'
                     ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs'
@@ -134,7 +166,7 @@ export default function App() {
             {(gameCategoryFilter === 'all' || gameCategoryFilter === 'classic') && (
               <>
                 <button
-                  onClick={() => setActiveTab('quiz')}
+                  onClick={() => selectTab('quiz')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'quiz'
                       ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
@@ -146,7 +178,7 @@ export default function App() {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab('sliding')}
+                  onClick={() => selectTab('sliding')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'sliding'
                       ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
@@ -158,7 +190,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('scramble')}
+                  onClick={() => selectTab('scramble')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'scramble'
                       ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
@@ -170,7 +202,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('sudoku')}
+                  onClick={() => selectTab('sudoku')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'sudoku'
                       ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
@@ -182,7 +214,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('memory')}
+                  onClick={() => selectTab('memory')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'memory'
                       ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
@@ -204,7 +236,7 @@ export default function App() {
             {(gameCategoryFilter === 'all' || gameCategoryFilter === 'math') && (
               <>
                 <button
-                  onClick={() => setActiveTab('speedrun')}
+                  onClick={() => selectTab('speedrun')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'speedrun'
                       ? 'bg-rose-600 text-white dark:bg-rose-600 shadow-md'
@@ -216,7 +248,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('operator')}
+                  onClick={() => selectTab('operator')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'operator'
                       ? 'bg-indigo-600 text-white dark:bg-indigo-600 shadow-md'
@@ -228,7 +260,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('sumgrid')}
+                  onClick={() => selectTab('sumgrid')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'sumgrid'
                       ? 'bg-emerald-600 text-white dark:bg-emerald-600 shadow-md'
@@ -240,7 +272,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('pattern')}
+                  onClick={() => selectTab('pattern')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'pattern'
                       ? 'bg-teal-600 text-white dark:bg-teal-600 shadow-md'

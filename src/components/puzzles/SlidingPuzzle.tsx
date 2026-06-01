@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Award, Play } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playWinSound } from '../../lib/sound';
 
 interface Tile {
   id: number;
@@ -38,6 +39,7 @@ export function SlidingPuzzle() {
   };
 
   const startNewGame = () => {
+    playClickSound();
     let rawValues = [1, 2, 3, 4, 5, 6, 7, 8];
     // Shuffle values
     do {
@@ -94,11 +96,14 @@ export function SlidingPuzzle() {
       if (won) {
         setHasWon(true);
         setIsPlaying(false);
+        playWinSound();
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
         });
+      } else {
+        playClickSound();
       }
     }
   };
@@ -126,6 +131,11 @@ export function SlidingPuzzle() {
             <motion.button
               key={tile.id}
               layout
+              transition={{
+                type: 'spring',
+                stiffness: 320,
+                damping: 26
+              }}
               onClick={() => handleTileClick(index)}
               className={`w-full h-full rounded-xl flex items-center justify-center text-2xl font-bold transition-shadow ${
                 tile.isEmpty

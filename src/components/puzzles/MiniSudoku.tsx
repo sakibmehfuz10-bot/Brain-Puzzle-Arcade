@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, CheckCircle, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playClickSound, playWinSound } from '../../lib/sound';
 
 interface Cell {
   row: number;
@@ -85,11 +86,15 @@ export function MiniSudoku() {
     
     if (isCompleted) {
       setHasWon(true);
+      playWinSound();
+      window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'sudoku_ninja' } }));
       confetti({
         particleCount: 120,
         spread: 80,
         origin: { y: 0.6 }
       });
+    } else {
+      playClickSound();
     }
   };
 
@@ -106,7 +111,10 @@ export function MiniSudoku() {
         </div>
         <select
           value={boardIndex}
-          onChange={(e) => setBoardIndex(Number(e.target.value))}
+          onChange={(e) => {
+            playClickSound();
+            setBoardIndex(Number(e.target.value));
+          }}
           className="px-3 py-2 text-sm bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl"
         >
           {SUDOKU_BOARDS.map((b, i) => (
@@ -134,7 +142,12 @@ export function MiniSudoku() {
             return (
               <div
                 key={idx}
-                onClick={() => !cell.original && setSelectedCell({ row: cell.row, col: cell.col })}
+                onClick={() => {
+                  if (!cell.original) {
+                    playClickSound();
+                    setSelectedCell({ row: cell.row, col: cell.col });
+                  }
+                }}
                 className={themeClass}
                 style={{ minHeight: '60px' }}
               >
