@@ -32,8 +32,7 @@ router.post("/generate-quiz", async (req, res) => {
         response = await ai.models.generateContent({
           model,
           contents: `Create a 5-question quiz about the topic: "${topic}". Category: ${category || "General"}. Difficulty: ${difficulty || "Medium"}.
-          Include exactly these variations in your quiz questions: Give at least 1 "multiple-choice" question, 1 "true-false" question, 1 "fill-in-the-blank" question, and 1 "image-based" question.
-          For image-based questions, provide an Unsplash image URL related to the question as the "imageUrl" (e.g. https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800&q=80).
+          Include exactly these variations in your quiz questions: Give at least 2 "multiple-choice" questions, 2 "true-false" questions, and 1 "fill-in-the-blank" question.
           Make the questions interesting and educational, appropriate for the specified difficulty.`,
           config: {
             responseMimeType: "application/json",
@@ -43,9 +42,8 @@ router.post("/generate-quiz", async (req, res) => {
                 type: Type.OBJECT,
                 properties: {
                   id: { type: Type.STRING },
-                  type: { type: Type.STRING, description: "One of: multiple-choice, true-false, fill-in-the-blank, image-based" },
+                  type: { type: Type.STRING, description: "One of: multiple-choice, true-false, fill-in-the-blank" },
                   text: { type: Type.STRING, description: "The question text" },
-                  imageUrl: { type: Type.STRING, description: "Optional image URL for image-based questions. Use a valid unsplash URL like https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800&q=80" },
                   options: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
