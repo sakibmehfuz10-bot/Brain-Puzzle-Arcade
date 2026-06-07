@@ -27,13 +27,28 @@ router.post("/generate-quiz", async (req, res) => {
     let lastError;
     const modelsToTry = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.5-flash"];
 
+    const difficultyGuidelines = {
+      Easy: "Must focus on basic foundational concepts, simple terminology, direct facts, and introductory/basic knowledge. The incorrect options should be relatively easy to rule out for anyone with a simple understanding of the topic.",
+      Medium: "Must focus on intermediate-level comprehension, relationships between ideas, practical application of rules, and standard misconceptions. Do NOT ask trivial, straightforward questions. The incorrect options must be highly plausible and require solid, non-trivial understanding of the topic to rule out.",
+      Hard: "Must focus on highly advanced, specialized, or technical expert-level details, subtle definitions, complex multi-step deductions, historic exceptions, or expert-level concepts. The questions should challenge even highly knowledgeable individuals or professionals. Trivial or simple factual recall is absolutely forbidden. The incorrect options must be extremely subtle and look highly accurate to laypeople, representing professional-level misconceptions."
+    };
+
+    const currentGuidelines = (difficultyGuidelines as any)[difficulty] || difficultyGuidelines.Medium;
+
     for (const model of modelsToTry) {
       try {
         response = await ai.models.generateContent({
           model,
           contents: `Create a 5-question quiz about the topic: "${topic}". Category: ${category || "General"}. Difficulty: ${difficulty || "Medium"}.
-          Include exactly these variations in your quiz questions: Give at least 2 "multiple-choice" questions, 2 "true-false" questions, and 1 "fill-in-the-blank" question.
-          Make the questions interesting and educational, appropriate for the specified difficulty.`,
+
+          Strict Difficulty Requirement:
+          The selected difficulty is "${difficulty || "Medium"}". You MUST strictly adhere to these specific guidelines for this difficulty level:
+          ${currentGuidelines}
+
+          Make sure that:
+          1. The questions are genuinely written at the "${difficulty || "Medium"}" level. For "Medium" and "Hard" levels, do not generate questions that are easy or common knowledge. Elevate the complexity, wording, and conceptual density accordingly.
+          2. Include exactly these question variations: Give at least 2 "multiple-choice" questions, 2 "true-false" questions, and 1 "fill-in-the-blank" question.
+          3. Format the questions to be interesting, educational, and strictly matching the "${difficulty || "Medium"}" difficulty.`,
           config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -42,7 +57,7 @@ router.post("/generate-quiz", async (req, res) => {
                 type: Type.OBJECT,
                 properties: {
                   id: { type: Type.STRING },
-                  type: { type: Type.STRING, description: "One of: multiple-choice, true-false, fill-in-the-blank" },
+                  questionType: { type: Type.STRING, description: "One of: multiple-choice, true-false, fill-in-the-blank" },
                   text: { type: Type.STRING, description: "The question text" },
                   options: {
                     type: Type.ARRAY,
@@ -58,7 +73,7 @@ router.post("/generate-quiz", async (req, res) => {
                     description: "A short explanation of why the answer is correct",
                   },
                 },
-                required: ["id", "type", "text", "correctAnswer", "explanation"],
+                required: ["id", "questionType", "text", "correctAnswer", "explanation"],
               },
             },
           },
@@ -86,7 +101,18 @@ router.post("/generate-quiz", async (req, res) => {
     }
 
     const quizData = JSON.parse(cleanText);
-    res.json(quizData);
+    const mappedQuizData = Array.isArray(quizData)
+      ? quizData.map((q: any) => ({
+          id: q.id,
+          type: q.questionType || q.type || "multiple-choice",
+          text: q.text,
+          options: q.options || [],
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+        }))
+      : quizData;
+
+    res.json(mappedQuizData);
   } catch (error: any) {
     console.error("Error generating quiz:", error);
     res.status(500).json({ error: error.message || "Failed to generate quiz" });
