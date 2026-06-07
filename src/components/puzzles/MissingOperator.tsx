@@ -21,6 +21,15 @@ export function MissingOperator() {
   const [selectedOp2, setSelectedOp2] = useState<string | null>(null);
   const [hasWonLevel, setHasWonLevel] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
+  const [bestLevel, setBestLevel] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_operator_best_level');
+    if (saved) {
+      setBestLevel(parseInt(saved, 10));
+    }
+  }, []);
 
   const calculate = (a: number, b: number, op: string): number => {
     switch (op) {
@@ -92,6 +101,7 @@ export function MissingOperator() {
     setSelectedOp1(null);
     setSelectedOp2(null);
     setHasWonLevel(null);
+    setIsNewRecord(false);
   };
 
   const selectOperator = (op: string) => {
@@ -133,11 +143,48 @@ export function MissingOperator() {
       playCorrectSound();
       setHasWonLevel(true);
       setScore(prev => prev + lvlBonus());
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.8 }
-      });
+
+      const previousBest = bestLevel || 0;
+      const reachedNewBest = level > previousBest;
+
+      if (reachedNewBest) {
+        setIsNewRecord(true);
+        setBestLevel(level);
+        localStorage.setItem('puzzle_operator_best_level', level.toString());
+
+        // Epic dual side-cannons confetti stream for high level record
+        const duration = 2.5 * 1000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 60,
+            origin: { x: 0, y: 0.8 },
+            colors: ['#6366f1', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6']
+          });
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 60,
+            origin: { x: 1, y: 0.8 },
+            colors: ['#6366f1', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      } else {
+        // Standard solved level confetti
+        confetti({
+          particleCount: 60,
+          spread: 45,
+          origin: { y: 0.8 }
+        });
+      }
     } else {
       playIncorrectSound();
       setHasWonLevel(false);
@@ -163,9 +210,17 @@ export function MissingOperator() {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Fill the blank equations correctly</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
-          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">+{score}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestLevel !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Level</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">Lvl {bestLevel}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
+            <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">+{score}</p>
+          </div>
         </div>
       </div>
 
@@ -226,11 +281,16 @@ export function MissingOperator() {
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="absolute inset-0 bg-green-500/10 rounded-2xl border border-green-500 flex flex-col items-center justify-center"
+              className="absolute inset-0 bg-green-500/10 rounded-2xl border border-green-500 flex flex-col items-center justify-center p-3"
             >
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg flex flex-col items-center">
+              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg flex flex-col items-center max-w-[90%]">
                 <Check className="w-8 h-8 text-green-500 mb-1" />
-                <span className="text-sm font-bold text-gray-800 dark:text-white">Solved correctly! (+{lvlBonus()} pts)</span>
+                {isNewRecord && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full mb-1 animate-pulse">
+                    🏆 New Best Level! 🏆
+                  </span>
+                )}
+                <span className="text-sm font-bold text-gray-800 dark:text-white text-center">Solved correctly! (+{lvlBonus()} pts)</span>
                 <button
                   onClick={advanceLevel}
                   className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center"

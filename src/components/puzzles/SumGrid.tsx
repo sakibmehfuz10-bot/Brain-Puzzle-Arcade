@@ -17,6 +17,15 @@ export function SumGrid() {
   const [streak, setStreak] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [bestScore, setBestScore] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_sum_best_score');
+    if (saved) {
+      setBestScore(parseInt(saved, 10));
+    }
+  }, []);
 
   // Initialize a 4x4 grid of random numbers from 1 to 9
   const generateNewGrid = () => {
@@ -52,6 +61,7 @@ export function SumGrid() {
     setScore(0);
     setStreak(0);
     setTimeLeft(60);
+    setIsNewRecord(false);
     setIsPlaying(true);
   };
 
@@ -127,6 +137,49 @@ export function SumGrid() {
             clearInterval(interval!);
             setIsPlaying(false);
             playWinSound();
+
+            const previousBest = bestScore || 0;
+            const reachedNewBest = score > previousBest;
+
+            if (reachedNewBest) {
+              setIsNewRecord(true);
+              setBestScore(score);
+              localStorage.setItem('puzzle_sum_best_score', score.toString());
+
+              // Epic dual side-cannons confetti stream for high score
+              const duration = 2.5 * 1000;
+              const end = Date.now() + duration;
+
+              const frame = () => {
+                confetti({
+                  particleCount: 4,
+                  angle: 60,
+                  spread: 60,
+                  origin: { x: 0, y: 0.8 },
+                  colors: ['#f43f5e', '#fda4af', '#f59e0b', '#ec4899', '#8b5cf6']
+                });
+                confetti({
+                  particleCount: 4,
+                  angle: 120,
+                  spread: 60,
+                  origin: { x: 1, y: 0.8 },
+                  colors: ['#f43f5e', '#fda4af', '#f59e0b', '#ec4899', '#8b5cf6']
+                });
+
+                if (Date.now() < end) {
+                  requestAnimationFrame(frame);
+                }
+              };
+              frame();
+            } else if (score > 0) {
+              // Standard completing confetti
+              confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+              });
+            }
+
             return 0;
           }
           return prev - 1;
@@ -136,7 +189,7 @@ export function SumGrid() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isPlaying, timeLeft]);
+  }, [isPlaying, timeLeft, score, bestScore]);
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
@@ -147,9 +200,17 @@ export function SumGrid() {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Select numbers that add up to target</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{score}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestScore !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Score</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">{bestScore}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{score}</p>
+          </div>
         </div>
       </div>
 
@@ -188,15 +249,28 @@ export function SumGrid() {
               );
             })
           ) : (
-            <div className="absolute inset-0 bg-white/70 dark:bg-slate-800/80 rounded-2xl flex flex-col items-center justify-center backdrop-blur-xs">
-              <p className="text-gray-600 dark:text-gray-300 font-medium mb-4 text-center px-6">
-                Connect sums matching the target! Solving gives heavy cascading combo streaks.
-              </p>
+            <div className="absolute inset-0 bg-white/70 dark:bg-slate-800/80 rounded-2xl flex flex-col items-center justify-center backdrop-blur-xs p-6 text-center">
+              {score > 0 ? (
+                <div className="mb-4 space-y-1">
+                  {isNewRecord && (
+                    <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full animate-pulse inline-block mb-2">
+                      🏆 New High Score! 🏆
+                    </span>
+                  )}
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Game Over!</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">You scored <span className="font-extrabold text-rose-500">{score} points</span>!</p>
+                  <p className="text-xs text-gray-400">High combo streak was 🔥 {streak}</p>
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300 font-medium mb-4 text-center px-6">
+                  Connect sums matching the target! Solving gives heavy cascading combo streaks.
+                </p>
+              )}
               <button
                 onClick={startSumGridGame}
                 className="flex items-center px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition-all shadow-md active:scale-95"
               >
-                <Play className="w-4 h-4 mr-2" /> Start Solver Game
+                <Play className="w-4 h-4 mr-2" /> {score > 0 ? 'Play Again' : 'Start Solver Game'}
               </button>
             </div>
           )}

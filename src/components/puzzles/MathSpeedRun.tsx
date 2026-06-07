@@ -21,8 +21,17 @@ export function MathSpeedRun() {
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+  const [bestScore, setBestScore] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_speedrun_best_score');
+    if (saved) {
+      setBestScore(parseInt(saved, 10));
+    }
+  }, []);
 
   const generateQuestion = (currentScore: number): Question => {
     // Escalate difficulty based on score
@@ -78,6 +87,7 @@ export function MathSpeedRun() {
     setBestStreak(0);
     setSelectedAnswer(null);
     setIsAnswerCorrect(null);
+    setIsNewRecord(false);
     setCurrentQuestion(generateQuestion(0));
   };
 
@@ -116,13 +126,51 @@ export function MathSpeedRun() {
             clearInterval(timerRef.current!);
             setIsPlaying(false);
             playWinSound();
-            if (score >= 100) {
-              window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'math_overlord' } }));
+
+            const previousBest = bestScore || 0;
+            const reachedNewBest = score > previousBest;
+
+            if (reachedNewBest) {
+              setIsNewRecord(true);
+              setBestScore(score);
+              localStorage.setItem('puzzle_speedrun_best_score', score.toString());
+
+              // Epic dual side-cannons confetti stream for high score
+              const duration = 2.5 * 1000;
+              const end = Date.now() + duration;
+
+              const frame = () => {
+                confetti({
+                  particleCount: 4,
+                  angle: 60,
+                  spread: 60,
+                  origin: { x: 0, y: 0.8 },
+                  colors: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6']
+                });
+                confetti({
+                  particleCount: 4,
+                  angle: 120,
+                  spread: 60,
+                  origin: { x: 1, y: 0.8 },
+                  colors: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6']
+                });
+
+                if (Date.now() < end) {
+                  requestAnimationFrame(frame);
+                }
+              };
+              frame();
+            } else if (score > 0) {
+              // Standard completing confetti
               confetti({
-                particleCount: 150,
-                spread: 80,
+                particleCount: 80,
+                spread: 70,
                 origin: { y: 0.6 }
               });
+            }
+
+            if (score >= 100) {
+              window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'math_overlord' } }));
             }
             return 0;
           }
@@ -134,7 +182,7 @@ export function MathSpeedRun() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, timeLeft, score]);
+  }, [isPlaying, timeLeft, score, bestScore]);
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
@@ -145,9 +193,17 @@ export function MathSpeedRun() {
           </h2>
           <p className="text-sm text-gray-400 dark:text-gray-400 mt-1">Answer fast to raise your combo meter</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{score}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestScore !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Score</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">{bestScore}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{score}</p>
+          </div>
         </div>
       </div>
 
@@ -253,7 +309,14 @@ export function MathSpeedRun() {
       {/* Game statistics */}
       {!isPlaying && score > 0 && (
         <div className="mb-6 p-4 border border-blue-100 dark:border-slate-700/60 bg-blue-50/20 dark:bg-slate-900/20 rounded-2xl text-center space-y-2">
-          <h3 className="font-bold text-gray-900 dark:text-white">Timer Ended! Excellent job.</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
+            Timer Ended! {isNewRecord ? "🎉 " : "Excellent job."}
+            {isNewRecord && (
+              <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full animate-pulse">
+                🏆 New High Score! 🏆
+              </span>
+            )}
+          </h3>
           <div className="flex justify-around text-sm font-semibold">
             <div>
               <span className="text-gray-400 block text-xs">Total Score</span>

@@ -19,6 +19,16 @@ export function MemoryCards() {
   const [moves, setMoves] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasWon, setHasWon] = useState(false);
+  const [bestMoves, setBestMoves] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  // Load best moves on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_memory_best_moves');
+    if (saved) {
+      setBestMoves(parseInt(saved, 10));
+    }
+  }, []);
 
   const initGame = () => {
     // Generate matched pairs
@@ -40,6 +50,7 @@ export function MemoryCards() {
     setSelected([]);
     setMoves(0);
     setHasWon(false);
+    setIsNewRecord(false);
     setIsPlaying(true);
   };
 
@@ -76,11 +87,49 @@ export function MemoryCards() {
             setIsPlaying(false);
             playWinSound();
             window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'memory_monarch' } }));
-            confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-            });
+            
+            const nextMoves = moves + 1; // Since we incremented moves previously
+            const previousBest = bestMoves;
+            const reachedNewBest = previousBest === null || nextMoves < previousBest;
+
+            if (reachedNewBest) {
+              setIsNewRecord(true);
+              setBestMoves(nextMoves);
+              localStorage.setItem('puzzle_memory_best_moves', nextMoves.toString());
+
+              // Epic dual side-cannons confetti stream for high score
+              const duration = 2.5 * 1000;
+              const end = Date.now() + duration;
+
+              const frame = () => {
+                confetti({
+                  particleCount: 4,
+                  angle: 60,
+                  spread: 60,
+                  origin: { x: 0, y: 0.8 },
+                  colors: ['#ef4444', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6']
+                });
+                confetti({
+                  particleCount: 4,
+                  angle: 120,
+                  spread: 60,
+                  origin: { x: 1, y: 0.8 },
+                  colors: ['#ef4444', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6']
+                });
+
+                if (Date.now() < end) {
+                  requestAnimationFrame(frame);
+                }
+              };
+              frame();
+            } else {
+              // Standard completing confetti
+              confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+              });
+            }
           } else {
             // Regular match chime
             playCorrectSound();
@@ -111,9 +160,17 @@ export function MemoryCards() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Memory Match</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Match all the hidden emoji pairs</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Moves</span>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{moves}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestMoves !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Moves</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">{bestMoves}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Moves</span>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{moves}</p>
+          </div>
         </div>
       </div>
 
@@ -153,6 +210,11 @@ export function MemoryCards() {
           <div className="absolute inset-0 bg-green-500/15 rounded-2xl flex flex-col items-center justify-center backdrop-blur-xs border-2 border-green-500">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
               <Award className="w-12 h-12 text-yellow-500 mb-2 animate-bounce" />
+              {isNewRecord && (
+                <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full mb-2 animate-pulse">
+                  🏆 New Personal Record! 🏆
+                </span>
+              )}
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Cleared in {moves} moves!</h3>
               <button
                 onClick={initGame}

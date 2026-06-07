@@ -23,6 +23,15 @@ export function WordScramble() {
   const [attempts, setAttempts] = useState(0);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [bestScore, setBestScore] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_scramble_best_score');
+    if (saved) {
+      setBestScore(parseInt(saved, 10));
+    }
+  }, []);
 
   const selectNewWord = () => {
     const listWithoutCurrent = WORD_POOL.filter(w => w.word !== currentWordObj.word);
@@ -39,6 +48,7 @@ export function WordScramble() {
     setUserInput('');
     setIsCorrect(null);
     setShowHint(false);
+    setIsNewRecord(false);
   };
 
   const checkAnswer = (e: React.FormEvent) => {
@@ -46,14 +56,50 @@ export function WordScramble() {
     const cleanInput = userInput.trim().toUpperCase();
     if (cleanInput === currentWordObj.word) {
       setIsCorrect(true);
-      setScore(prev => prev + 10);
+      const nextScore = score + 10;
+      setScore(nextScore);
       playCorrectSound();
       window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'scramble_solver' } }));
-      confetti({
-        particleCount: 50,
-        spread: 40,
-        origin: { y: 0.8 }
-      });
+
+      const previousBest = bestScore || 0;
+      if (nextScore > previousBest) {
+        setIsNewRecord(true);
+        setBestScore(nextScore);
+        localStorage.setItem('puzzle_scramble_best_score', nextScore.toString());
+
+        // Epic dual side-cannons confetti stream for high score
+        const duration = 2.5 * 1000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 60,
+            origin: { x: 0, y: 0.8 },
+            colors: ['#34d399', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6']
+          });
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 60,
+            origin: { x: 1, y: 0.8 },
+            colors: ['#34d399', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      } else {
+        // Standard correcting confetti
+        confetti({
+          particleCount: 50,
+          spread: 40,
+          origin: { y: 0.8 }
+        });
+      }
     } else {
       setIsCorrect(false);
       setAttempts(prev => prev + 1);
@@ -72,9 +118,17 @@ export function WordScramble() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Word Scramble</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Unscramble the letters to make a word</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">+{score}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestScore !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Score</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">+{bestScore}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">+{score}</p>
+          </div>
         </div>
       </div>
 
@@ -145,9 +199,16 @@ export function WordScramble() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800/20 rounded-xl flex items-center justify-between"
           >
-            <span className="flex items-center font-semibold text-sm">
-              <CheckCircle2 className="w-5 h-5 mr-2" /> Amazing! That's correct!
-            </span>
+            <div className="flex flex-col items-start gap-1">
+              <span className="flex items-center font-semibold text-sm">
+                <CheckCircle2 className="w-5 h-5 mr-2" /> Amazing! That's correct!
+              </span>
+              {isNewRecord && (
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md ml-7 animate-pulse">
+                  🏆 New Personal best! 🏆
+                </span>
+              )}
+            </div>
             <button
               onClick={() => {
                 playClickSound();

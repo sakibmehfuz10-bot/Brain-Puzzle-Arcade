@@ -78,6 +78,15 @@ export function NumberSeries() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState(0);
+  const [bestScore, setBestScore] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_pattern_best_score');
+    if (saved) {
+      setBestScore(parseInt(saved, 10));
+    }
+  }, []);
 
   const initLevel = (lvlIndex: number) => {
     const puzzle = PUZZLE_SERIES[lvlIndex % PUZZLE_SERIES.length];
@@ -92,6 +101,7 @@ export function NumberSeries() {
     setSelectedAnswer(null);
     setIsCorrect(null);
     setShowHint(false);
+    setIsNewRecord(false);
   };
 
   const handleChoice = (num: number) => {
@@ -103,12 +113,48 @@ export function NumberSeries() {
 
     if (correct) {
       playCorrectSound();
-      setScore(prev => prev + 25);
-      confetti({
-        particleCount: 50,
-        spread: 40,
-        origin: { y: 0.8 }
-      });
+      const nextScore = score + 25;
+      setScore(nextScore);
+
+      const previousBest = bestScore || 0;
+      if (nextScore > previousBest) {
+        setIsNewRecord(true);
+        setBestScore(nextScore);
+        localStorage.setItem('puzzle_pattern_best_score', nextScore.toString());
+
+        // Epic dual side-cannons confetti stream for high score
+        const duration = 2.5 * 1000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 60,
+            origin: { x: 0, y: 0.8 },
+            colors: ['#0d9488', '#2dd4bf', '#f59e0b', '#ec4899', '#8b5cf6']
+          });
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 60,
+            origin: { x: 1, y: 0.8 },
+            colors: ['#0d9488', '#2dd4bf', '#f59e0b', '#ec4899', '#8b5cf6']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      } else {
+        // Standard solved stage confetti
+        confetti({
+          particleCount: 50,
+          spread: 40,
+          origin: { y: 0.8 }
+        });
+      }
     } else {
       playIncorrectSound();
     }
@@ -134,9 +180,17 @@ export function NumberSeries() {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Figure out the sequence pattern logic</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
-          <p className="text-2xl font-black text-teal-600 dark:text-teal-400">+{score}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestScore !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Score</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">+{bestScore}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Score</span>
+            <p className="text-2xl font-black text-teal-600 dark:text-teal-400">+{score}</p>
+          </div>
         </div>
       </div>
 
@@ -216,15 +270,22 @@ export function NumberSeries() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800/20 rounded-xl flex items-center justify-between"
+            className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800/20 rounded-xl flex items-center justify-between gap-3"
           >
-            <div className="text-xs">
-              <span className="font-bold block">Correct Pattern!</span>
+            <div className="text-xs flex flex-col gap-1">
+              <span className="font-bold flex items-center gap-1.5 flex-wrap">
+                Correct Pattern!
+                {isNewRecord && (
+                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full animate-pulse inline-block">
+                    🏆 New High Score! 🏆
+                  </span>
+                )}
+              </span>
               <span className="opacity-80">It is a {selectedWordObj?.patternType}.</span>
             </div>
             <button
               onClick={advanceLevel}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center shrink-0"
             >
               Continue <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </button>

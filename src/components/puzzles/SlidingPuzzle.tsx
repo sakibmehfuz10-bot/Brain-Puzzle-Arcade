@@ -15,6 +15,16 @@ export function SlidingPuzzle() {
   const [moves, setMoves] = useState(0);
   const [hasWon, setHasWon] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [bestMoves, setBestMoves] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  // Load best moves on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_sliding_best_moves');
+    if (saved) {
+      setBestMoves(parseInt(saved, 10));
+    }
+  }, []);
 
   // Initialize ordered tiles
   const initTiles = () => {
@@ -59,6 +69,7 @@ export function SlidingPuzzle() {
     setTiles(shuffled);
     setMoves(0);
     setHasWon(false);
+    setIsNewRecord(false);
     setIsPlaying(true);
   };
 
@@ -89,7 +100,8 @@ export function SlidingPuzzle() {
       updated[index] = { id: 9, value: 0, isEmpty: true };
       
       setTiles(updated);
-      setMoves(prev => prev + 1);
+      const nextMoves = moves + 1;
+      setMoves(nextMoves);
 
       // Check win condition
       const won = updated.slice(0, 8).every((t, idx) => t.value === idx + 1);
@@ -97,11 +109,49 @@ export function SlidingPuzzle() {
         setHasWon(true);
         setIsPlaying(false);
         playWinSound();
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
+
+        // Check high score moves
+        const previousBest = bestMoves;
+        const reachedNewBest = previousBest === null || nextMoves < previousBest;
+        
+        if (reachedNewBest) {
+          setIsNewRecord(true);
+          setBestMoves(nextMoves);
+          localStorage.setItem('puzzle_sliding_best_moves', nextMoves.toString());
+
+          // Launch spectacular elite side-cannon animations for high score record
+          const duration = 2.5 * 1000;
+          const end = Date.now() + duration;
+
+          const frame = () => {
+            confetti({
+              particleCount: 4,
+              angle: 60,
+              spread: 60,
+              origin: { x: 0, y: 0.8 },
+              colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+            });
+            confetti({
+              particleCount: 4,
+              angle: 120,
+              spread: 60,
+              origin: { x: 1, y: 0.8 },
+              colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+            });
+
+            if (Date.now() < end) {
+              requestAnimationFrame(frame);
+            }
+          };
+          frame();
+        } else {
+          // Standard win confetti
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
       } else {
         playClickSound();
       }
@@ -119,9 +169,17 @@ export function SlidingPuzzle() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sliding Tile Puzzle</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Reorder numbers 1 to 8 chronologically</p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Moves</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{moves}</p>
+        <div className="flex items-center space-x-6 text-right">
+          {bestMoves !== null && (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-green-500">Best Moves</span>
+              <p className="text-2xl font-black text-green-600 dark:text-green-400">{bestMoves}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Moves</span>
+            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{moves}</p>
+          </div>
         </div>
       </div>
 
@@ -165,6 +223,11 @@ export function SlidingPuzzle() {
           <div className="absolute inset-0 bg-green-500/15 rounded-2xl flex flex-col items-center justify-center backdrop-blur-xs border-2 border-green-500">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
               <Award className="w-12 h-12 text-yellow-500 mb-2 animate-bounce" />
+              {isNewRecord && (
+                <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full mb-2 animate-pulse">
+                  🏆 New Personal Record! 🏆
+                </span>
+              )}
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Solved in {moves} moves!</h3>
               <button
                 onClick={startNewGame}

@@ -49,6 +49,14 @@ export function MiniSudoku() {
   const [grid, setGrid] = useState<Cell[]>([]);
   const [hasWon, setHasWon] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
+  const [solvedCount, setSolvedCount] = useState(0);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('puzzle_sudoku_solved_count');
+    if (saved) {
+      setSolvedCount(parseInt(saved, 10));
+    }
+  }, []);
 
   const initGame = (idx: number) => {
     const selected = SUDOKU_BOARDS[idx];
@@ -88,11 +96,36 @@ export function MiniSudoku() {
       setHasWon(true);
       playWinSound();
       window.dispatchEvent(new CustomEvent('unlock-achievement', { detail: { id: 'sudoku_ninja' } }));
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      
+      const nextCount = solvedCount + 1;
+      setSolvedCount(nextCount);
+      localStorage.setItem('puzzle_sudoku_solved_count', nextCount.toString());
+
+      // Epic side-cannons confetti stream for Sudoku master completion
+      const duration = 2.5 * 1000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 4,
+          angle: 60,
+          spread: 60,
+          origin: { x: 0, y: 0.8 },
+          colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+        });
+        confetti({
+          particleCount: 4,
+          angle: 120,
+          spread: 60,
+          origin: { x: 1, y: 0.8 },
+          colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
     } else {
       playClickSound();
     }
@@ -104,23 +137,30 @@ export function MiniSudoku() {
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mini-Sudoku</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Fill the 4x4 matrix so every row/col has 1-4</p>
         </div>
-        <select
-          value={boardIndex}
-          onChange={(e) => {
-            playClickSound();
-            setBoardIndex(Number(e.target.value));
-          }}
-          className="px-3 py-2 text-sm bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl"
-        >
-          {SUDOKU_BOARDS.map((b, i) => (
-            <option key={i} value={i}>{b.difficulty}</option>
-          ))}
-        </select>
+        <div className="flex items-center space-x-3">
+          {solvedCount > 0 && (
+            <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 font-extrabold rounded-lg text-xs leading-tight whitespace-nowrap">
+              Solved: {solvedCount}
+            </div>
+          )}
+          <select
+            value={boardIndex}
+            onChange={(e) => {
+              playClickSound();
+              setBoardIndex(Number(e.target.value));
+            }}
+            className="px-3 py-2 text-sm bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl"
+          >
+            {SUDOKU_BOARDS.map((b, i) => (
+              <option key={i} value={i}>{b.difficulty}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-gray-100 dark:bg-slate-900/60 p-4 rounded-3xl mb-6 flex justify-center">

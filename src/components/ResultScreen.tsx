@@ -40,7 +40,7 @@ export function ResultScreen({ score, totalQuestions, topic, onRestart }: Result
     if (isLoading) return;
 
     if (percentage >= 80) {
-      const duration = 3 * 1000;
+      const duration = 3.5 * 1000;
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 50 };
 
@@ -59,6 +59,14 @@ export function ResultScreen({ score, totalQuestions, topic, onRestart }: Result
       }, 250);
 
       return () => clearInterval(interval);
+    } else if (percentage >= 60) {
+      // Standard successful completion (>= 60%) gets a nice prompt burst
+      confetti({
+        particleCount: 100,
+        spread: 85,
+        origin: { y: 0.6 },
+        zIndex: 50
+      });
     }
   }, [isLoading, percentage]);
 
