@@ -15,12 +15,16 @@ import { MathSpeedRun } from './components/puzzles/MathSpeedRun';
 import { MissingOperator } from './components/puzzles/MissingOperator';
 import { SumGrid } from './components/puzzles/SumGrid';
 import { NumberSeries } from './components/puzzles/NumberSeries';
-import { BrainCircuit, Grid, Type, LayoutGrid, Zap, HelpCircle, Flame, BookOpen, Trophy } from 'lucide-react';
+import { ColorFlood } from './components/puzzles/ColorFlood';
+import { MatrixToggle } from './components/puzzles/MatrixToggle';
+import { LogicWeight } from './components/puzzles/LogicWeight';
+import { MemoryEcho } from './components/puzzles/MemoryEcho';
+import { BrainCircuit, Grid, Type, LayoutGrid, Zap, HelpCircle, Flame, BookOpen, Trophy, Palette, Layers, Scale, Radio } from 'lucide-react';
 import { useAchievements } from './context/AchievementsContext';
 
 export default function App() {
   const { unlockedList, setTrophyModalOpen } = useAchievements();
-  const [activeTab, setActiveTab] = useState<'quiz' | 'sliding' | 'scramble' | 'sudoku' | 'memory' | 'speedrun' | 'operator' | 'sumgrid' | 'pattern'>('quiz');
+  const [activeTab, setActiveTab] = useState<'quiz' | 'sliding' | 'scramble' | 'sudoku' | 'memory' | 'speedrun' | 'operator' | 'sumgrid' | 'pattern' | 'flood' | 'matrix' | 'weight' | 'echo'>('quiz');
   const [gameCategoryFilter, setGameCategoryFilter] = useState<'all' | 'classic' | 'math'>('all');
   const [state, setState] = useState<QuizState>('start');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -213,7 +217,7 @@ export default function App() {
                   Sudoku
                 </button>
 
-                <button
+                 <button
                   onClick={() => selectTab('memory')}
                   className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
                     activeTab === 'memory'
@@ -223,6 +227,45 @@ export default function App() {
                 >
                   <BrainCircuit className="w-3.5 h-3.5 mr-1.5" />
                   Memory Match
+                </button>
+
+                <button
+                  onClick={() => selectTab('flood')}
+                  className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
+                    activeTab === 'flood'
+                      ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
+                      : 'bg-gray-50 dark:bg-slate-700/40 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                  id="nav-tab-flood"
+                >
+                  <Palette className="w-3.5 h-3.5 mr-1.5 text-pink-500" />
+                  Color Flood
+                </button>
+
+                <button
+                  onClick={() => selectTab('matrix')}
+                  className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
+                    activeTab === 'matrix'
+                      ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
+                      : 'bg-gray-50 dark:bg-slate-700/40 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                  id="nav-tab-matrix"
+                >
+                  <Layers className="w-3.5 h-3.5 mr-1.5 text-purple-500" />
+                  Matrix Toggle
+                </button>
+
+                <button
+                  onClick={() => selectTab('echo')}
+                  className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
+                    activeTab === 'echo'
+                      ? 'bg-gray-900 text-white dark:bg-blue-600 shadow-md'
+                      : 'bg-gray-50 dark:bg-slate-700/40 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                  id="nav-tab-echo"
+                >
+                  <Radio className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
+                  Memory Echo
                 </button>
               </>
             )}
@@ -281,6 +324,19 @@ export default function App() {
                 >
                   <BookOpen className="w-3.5 h-3.5 mr-1.5" />
                   Pattern Riddle
+                </button>
+
+                <button
+                  onClick={() => selectTab('weight')}
+                  className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
+                    activeTab === 'weight'
+                      ? 'bg-amber-600 text-white dark:bg-amber-600 shadow-md'
+                      : 'bg-amber-50/20 dark:bg-slate-700/40 text-amber-500 hover:text-amber-900 dark:text-amber-400 dark:hover:text-white'
+                  }`}
+                  id="nav-tab-weight"
+                >
+                  <Scale className="w-3.5 h-3.5 mr-1.5 text-amber-500" />
+                  Logic Weight
                 </button>
               </>
             )}
@@ -443,6 +499,58 @@ export default function App() {
               className="w-full flex justify-center"
             >
               <NumberSeries />
+            </motion.div>
+          )}
+
+          {activeTab === 'flood' && (
+            <motion.div
+              key="flood"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full flex justify-center"
+            >
+              <ColorFlood />
+            </motion.div>
+          )}
+
+          {activeTab === 'matrix' && (
+            <motion.div
+              key="matrix"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full flex justify-center"
+            >
+              <MatrixToggle />
+            </motion.div>
+          )}
+
+          {activeTab === 'weight' && (
+            <motion.div
+              key="weight"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full flex justify-center"
+            >
+              <LogicWeight />
+            </motion.div>
+          )}
+
+          {activeTab === 'echo' && (
+            <motion.div
+              key="echo"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full flex justify-center"
+            >
+              <MemoryEcho />
             </motion.div>
           )}
         </AnimatePresence>
