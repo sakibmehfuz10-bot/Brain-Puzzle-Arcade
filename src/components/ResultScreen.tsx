@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Trophy, RotateCcw } from 'lucide-react';
+import { Trophy, RotateCcw, Glasses } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playClickSound, playWinSound } from '../lib/sound';
+import { Question } from '../types';
 
 interface ResultScreenProps {
   key?: any;
@@ -10,10 +11,13 @@ interface ResultScreenProps {
   totalQuestions: number;
   topic: string;
   onRestart: () => void;
+  questions?: Question[];
+  userAnswers?: string[];
 }
 
-export function ResultScreen({ score, totalQuestions, topic, onRestart }: ResultScreenProps) {
+export function ResultScreen({ score, totalQuestions, topic, onRestart, questions = [], userAnswers = [] }: ResultScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [isReviewing, setIsReviewing] = useState(false);
   const percentage = Math.round((score / totalQuestions) * 100);
   
   useEffect(() => {
@@ -132,28 +136,96 @@ export function ResultScreen({ score, totalQuestions, topic, onRestart }: Result
       </div>
 
       <div className="p-8">
-        <div className="flex justify-center items-center space-x-12 mb-10">
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest mb-2">Score</p>
-            <p className="text-4xl font-black text-gray-900 dark:text-gray-100">{score}<span className="text-xl text-gray-400 font-medium">/{totalQuestions}</span></p>
-          </div>
-          <div className="w-px h-16 bg-gray-200 dark:bg-slate-700 rounded-full" />
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest mb-2">Accuracy</p>
-            <p className="text-4xl font-black text-blue-600 dark:text-blue-400">{percentage}%</p>
-          </div>
-        </div>
+        {!isReviewing ? (
+          <>
+            <div className="flex justify-center items-center space-x-12 mb-10">
+              <div className="flex flex-col items-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest mb-2">Score</p>
+                <p className="text-4xl font-black text-gray-900 dark:text-gray-100">{score}<span className="text-xl text-gray-400 font-medium">/{totalQuestions}</span></p>
+              </div>
+              <div className="w-px h-16 bg-gray-200 dark:bg-slate-700 rounded-full" />
+              <div className="flex flex-col items-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest mb-2">Accuracy</p>
+                <p className="text-4xl font-black text-blue-600 dark:text-blue-400">{percentage}%</p>
+              </div>
+            </div>
 
-        <button
-          onClick={() => {
-            playClickSound();
-            onRestart();
-          }}
-          className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold rounded-2xl transition-colors flex items-center justify-center active:scale-[0.98]"
-        >
-          <RotateCcw className="w-5 h-5 mr-3" />
-          Challenge Another Topic
-        </button>
+            <button
+              onClick={() => {
+                playClickSound();
+                setIsReviewing(true);
+              }}
+              className="w-full py-4 px-6 mb-4 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 font-semibold rounded-2xl transition-colors flex items-center justify-center active:scale-[0.98]"
+            >
+              <Glasses className="w-5 h-5 mr-3" />
+              Review Answers
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound();
+                onRestart();
+              }}
+              className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold rounded-2xl transition-colors flex items-center justify-center active:scale-[0.98]"
+            >
+              <RotateCcw className="w-5 h-5 mr-3" />
+              Challenge Another Topic
+            </button>
+          </>
+        ) : (
+          <div className="space-y-6 text-left">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review your answers</h3>
+            <div className="max-h-[50vh] overflow-y-auto space-y-4 pr-2">
+              {questions.map((q, i) => {
+                 const userAnswer = userAnswers[i] || '';
+                 const isCorrect = userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim();
+                 return (
+                   <div key={i} className="p-5 rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/30">
+                     <p className="font-semibold text-gray-900 dark:text-gray-100 mb-4 tracking-tight"><span className="text-gray-400">Q{i + 1}.</span> {q.text}</p>
+                     
+                     <div className="space-y-2">
+                        <div className={`p-4 rounded-xl ${isCorrect ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300 border border-green-100 dark:border-green-800/30' : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300 border border-red-100 dark:border-red-800/30'}`}>
+                           <span className="text-xs uppercase tracking-widest font-bold opacity-60 mb-1 block">Your Answer</span>
+                           <span className="font-medium text-lg">{userAnswer || 'No answer'}</span>
+                        </div>
+                        
+                        {!isCorrect && (
+                          <div className="p-4 rounded-xl bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300 border border-green-100 dark:border-green-800/30">
+                             <span className="text-xs uppercase tracking-widest font-bold opacity-60 mb-1 block">Correct Answer</span>
+                             <span className="font-medium text-lg">{q.correctAnswer}</span>
+                          </div>
+                        )}
+                        
+                        {(q.explanation && !isCorrect) && (
+                          <p className="text-sm mt-4 text-gray-600 dark:text-gray-400 italic">"{q.explanation}"</p>
+                        )}
+                     </div>
+                   </div>
+                 );
+              })}
+            </div>
+            
+            <button
+              onClick={() => {
+                playClickSound();
+                setIsReviewing(false);
+              }}
+              className="w-full mt-2 py-4 text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-800 dark:hover:text-white transition-colors"
+            >
+               Back to Score
+            </button>
+            <button
+              onClick={() => {
+                playClickSound();
+                onRestart();
+              }}
+              className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold rounded-2xl transition-colors flex items-center justify-center active:scale-[0.98]"
+            >
+              <RotateCcw className="w-5 h-5 mr-3" />
+              Challenge Another Topic
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

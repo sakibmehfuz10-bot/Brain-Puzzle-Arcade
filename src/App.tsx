@@ -19,13 +19,15 @@ import { ColorFlood } from './components/puzzles/ColorFlood';
 import { MatrixToggle } from './components/puzzles/MatrixToggle';
 import { LogicWeight } from './components/puzzles/LogicWeight';
 import { MemoryEcho } from './components/puzzles/MemoryEcho';
+import { IQ_PUZZLES } from './lib/puzzleList';
+import { IQPuzzleEngine } from './components/puzzles/IQPuzzleEngine';
 import { BrainCircuit, Grid, Type, LayoutGrid, Zap, HelpCircle, Flame, BookOpen, Trophy, Palette, Layers, Scale, Radio } from 'lucide-react';
 import { useAchievements } from './context/AchievementsContext';
 
 export default function App() {
   const { unlockedList, setTrophyModalOpen } = useAchievements();
-  const [activeTab, setActiveTab] = useState<'quiz' | 'sliding' | 'scramble' | 'sudoku' | 'memory' | 'speedrun' | 'operator' | 'sumgrid' | 'pattern' | 'flood' | 'matrix' | 'weight' | 'echo'>('quiz');
-  const [gameCategoryFilter, setGameCategoryFilter] = useState<'all' | 'classic' | 'math'>('all');
+  const [activeTab, setActiveTab] = useState<string>('quiz');
+  const [gameCategoryFilter, setGameCategoryFilter] = useState<'all' | 'classic' | 'math' | 'iq'>('all');
   const [state, setState] = useState<QuizState>('start');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [topic, setTopic] = useState('');
@@ -34,6 +36,7 @@ export default function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<string[]>([]);
 
   const selectTab = (tab: typeof activeTab) => {
     setActiveTab(tab);
@@ -45,7 +48,7 @@ export default function App() {
     playClickSound();
   };
 
-  const startQuiz = async (selectedTopic: string, selectedCategory: string, selectedDifficulty: QuizDifficulty) => {
+  const startQuiz = async (selectedTopic: string, selectedCategory: string, selectedDifficulty: QuizDifficulty, numberOfQuestions: number) => {
     setIsLoading(true);
     setTopic(selectedTopic);
     setCategory(selectedCategory);
@@ -55,7 +58,12 @@ export default function App() {
       const response = await fetch('/api/generate-quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: selectedTopic, category: selectedCategory, difficulty: selectedDifficulty }),
+        body: JSON.stringify({ 
+          topic: selectedTopic, 
+          category: selectedCategory, 
+          difficulty: selectedDifficulty,
+          count: numberOfQuestions 
+        }),
       });
       
       if (!response.ok) {
@@ -69,6 +77,7 @@ export default function App() {
       }));
       setQuestions(sanitizedData);
       setScore(0);
+      setUserAnswers([]);
       setCurrentQuestionIndex(0);
       setState('playing');
     } catch (error) {
@@ -79,8 +88,9 @@ export default function App() {
     }
   };
 
-  const handleAnswer = (answer: string, isCorrect: boolean) => {
-    if (isCorrect) setScore(prev => prev + 1);
+  const handleAnswer = (answer: string, isCorrect: boolean, usedHint?: boolean) => {
+    if (isCorrect) setScore(prev => prev + (usedHint ? 0.5 : 1));
+    setUserAnswers(prev => [...prev, answer]);
   };
 
   const nextQuestion = async () => {
@@ -161,6 +171,16 @@ export default function App() {
                 }`}
               >
                 Math
+              </button>
+              <button
+                onClick={() => selectFilter('iq')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  gameCategoryFilter === 'iq'
+                    ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                IQ Tests
               </button>
             </div>
           </div>
@@ -340,6 +360,31 @@ export default function App() {
                 </button>
               </>
             )}
+
+            {/* Space splitter */}
+            {(gameCategoryFilter === 'all' || gameCategoryFilter === 'iq') && (
+              <span className="w-[1px] h-6 bg-gray-200 dark:bg-slate-700 block flex-none"></span>
+            )}
+
+            {/* IQ Puzzle games */}
+            {(gameCategoryFilter === 'all' || gameCategoryFilter === 'iq') && (
+              <>
+                {IQ_PUZZLES.map(puzzle => (
+                  <button
+                    key={puzzle.id}
+                    onClick={() => selectTab(puzzle.id)}
+                    className={`flex-none snap-start py-2 px-3.5 rounded-2xl text-xs font-bold flex items-center transition-all ${
+                      activeTab === puzzle.id
+                        ? 'bg-purple-600 text-white shadow-md'
+                        : 'bg-purple-50/20 dark:bg-slate-700/40 text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-white'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 mr-1.5 fill-purple-500" />
+                    {puzzle.name}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -374,6 +419,7 @@ export default function App() {
                 question={questions[currentQuestionIndex]}
                 questionNumber={currentQuestionIndex + 1}
                 totalQuestions={questions.length}
+                difficulty={difficulty}
                 onAnswer={handleAnswer}
                 onNext={nextQuestion}
               />
@@ -394,6 +440,8 @@ export default function App() {
                 totalQuestions={questions.length}
                 topic={topic}
                 onRestart={resetQuiz}
+                questions={questions}
+                userAnswers={userAnswers}
               />
             </motion.div>
           )}
@@ -553,6 +601,21 @@ export default function App() {
               <MemoryEcho />
             </motion.div>
           )}
+
+          {IQ_PUZZLES.map(puzzle => (
+            activeTab === puzzle.id && (
+              <motion.div
+                key={puzzle.id}
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full flex justify-center"
+              >
+                <IQPuzzleEngine config={puzzle} />
+              </motion.div>
+            )
+          ))}
         </AnimatePresence>
       </main>
     </div>

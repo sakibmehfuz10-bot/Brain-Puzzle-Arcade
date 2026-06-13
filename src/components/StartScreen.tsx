@@ -5,7 +5,7 @@ import { QuizDifficulty } from '../types';
 
 interface StartScreenProps {
   key?: any;
-  onStart: (topic: string, category: string, difficulty: QuizDifficulty) => void;
+  onStart: (topic: string, category: string, difficulty: QuizDifficulty, numberOfQuestions: number) => void;
   isLoading: boolean;
 }
 
@@ -19,11 +19,12 @@ export function StartScreen({ onStart, isLoading }: StartScreenProps) {
   const [topic, setTopic] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [difficulty, setDifficulty] = useState<QuizDifficulty>('Medium');
+  const [numberOfQuestions, setNumberOfQuestions] = useState<number>(5);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (topic.trim() && !isLoading) {
-      onStart(topic.trim(), category, difficulty);
+      onStart(topic.trim(), category, difficulty, numberOfQuestions);
     }
   };
 
@@ -93,6 +94,22 @@ export function StartScreen({ onStart, isLoading }: StartScreenProps) {
               {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+            Number of Questions ({numberOfQuestions})
+          </label>
+          <input
+            type="range"
+            min="3"
+            max="15"
+            step="1"
+            value={numberOfQuestions}
+            onChange={(e) => setNumberOfQuestions(parseInt(e.target.value))}
+            disabled={isLoading}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-blue-600 dark:accent-blue-500"
+          />
         </div>
         
         <button
