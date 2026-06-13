@@ -22,6 +22,7 @@ export function AchievementsProvider({ children }: { children: React.ReactNode }
   const [isTrophyModalOpen, setTrophyModalOpen] = useState(false);
   const [notificationQueue, setNotificationQueue] = useState<Achievement[]>([]);
   const [activeNotification, setActiveNotification] = useState<Achievement | null>(null);
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   // Initialize and load from standard localStorage on load
   useEffect(() => {
@@ -286,18 +287,38 @@ export function AchievementsProvider({ children }: { children: React.ReactNode }
 
               {/* Footer */}
               <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-100 dark:border-slate-800">
+                {isConfirmingClear ? (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-gray-500">Are you sure?</span>
+                    <button
+                      onClick={() => {
+                        resetProgress();
+                        setIsConfirmingClear(false);
+                      }}
+                      className="text-xs font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded"
+                    >
+                      Yes, Clear
+                    </button>
+                    <button
+                      onClick={() => setIsConfirmingClear(false)}
+                      className="text-xs font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer px-2 py-1 bg-gray-50 dark:bg-slate-800 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsConfirmingClear(true)}
+                    className="text-xs font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:underline transition-colors cursor-pointer"
+                  >
+                    Clear Badges Profile
+                  </button>
+                )}
                 <button
                   onClick={() => {
-                    if (confirm('Are you sure you want to clear your earned badges and progress?')) {
-                      resetProgress();
-                    }
+                    setTrophyModalOpen(false);
+                    setIsConfirmingClear(false);
                   }}
-                  className="text-xs font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:underline transition-colors cursor-pointer"
-                >
-                  Clear Badges Profile
-                </button>
-                <button
-                  onClick={() => setTrophyModalOpen(false)}
                   className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all text-xs cursor-pointer"
                 >
                   Return to Games

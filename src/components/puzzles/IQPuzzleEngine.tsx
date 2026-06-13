@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, Trophy, HelpCircle } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { playCorrectSound, playIncorrectSound, playWinSound } from '../../lib/sound';
 
 interface PuzzleConfig {
@@ -38,6 +39,11 @@ export function IQPuzzleEngine({ config }: { config: PuzzleConfig }) {
     
     if (answer.toLowerCase().trim() === puzzle.correctAnswer.toLowerCase().trim()) {
       playCorrectSound();
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
       setHasWonLevel(true);
       setScore(s => s + 10);
       setTimeout(() => {
@@ -109,19 +115,19 @@ export function IQPuzzleEngine({ config }: { config: PuzzleConfig }) {
             })}
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex gap-2 text-black dark:text-white items-center">
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 text-black dark:text-white">
             <input 
               type="text" 
               value={inputAnswer} 
               onChange={e => setInputAnswer(e.target.value)}
               disabled={hasWonLevel !== null}
               placeholder="Type your answer..."
-              className="flex-1 p-4 rounded-xl border-2 border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 text-lg"
+              className="flex-1 w-full p-4 rounded-xl border-2 border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 text-lg transition-colors"
             />
             <button 
               type="submit"
               disabled={hasWonLevel !== null || !inputAnswer.trim()}
-              className="px-6 py-4 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-50"
+              className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-xl disabled:opacity-50 transition-all flex items-center justify-center shrink-0"
             >
               Submit
             </button>
